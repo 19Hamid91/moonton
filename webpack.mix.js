@@ -18,6 +18,13 @@ mix.js('resources/js/app.js', 'public/js')
         '@': 'resources/js',
     });
 
+mix.options({
+    hmrOptions: {
+        host: 'localhost',
+        port: 8081, // Change this to any port number you prefer
+    },
+});
+    
 if (mix.inProduction()) {
     mix.version();
 }
