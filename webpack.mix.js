@@ -12,6 +12,19 @@ const mix = require('laravel-mix');
  */
 
 mix.js('resources/js/app.js', 'public/js')
-    .postCss('resources/css/app.css', 'public/css', [
-        //
-    ]);
+    .react()
+    .postCss('resources/css/app.css', 'public/css', [require('tailwindcss'), require('autoprefixer')])
+    .alias({
+        '@': 'resources/js',
+    });
+
+mix.options({
+    hmrOptions: {
+        host: 'localhost',
+        port: 8081, // Change this to any port number you prefer
+    },
+});
+    
+if (mix.inProduction()) {
+    mix.version();
+}
