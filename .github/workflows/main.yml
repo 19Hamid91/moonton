@@ -30,7 +30,7 @@ jobs:
         node-version: '16'
 
     - name: Install Node.js dependencies
-      run: npm install
+      run: npm install --legacy-peer-deps
 
     - name: Build React application
       run: npm run prod
