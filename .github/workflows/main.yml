@@ -1,0 +1,64 @@
+name: Deploy Moonton
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+
+    - name: Install PHP dependencies
+      run: composer install --no-dev --optimize-autoloader
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install Node.js dependencies
+      run: npm install
+
+    - name: Build React application
+      run: npm run prod
+
+    - name: Deploy to Server
+      uses: easingthemes/ssh-deploy@main
+      with:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_MT }}
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST_MT }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER_MT }}
+        REMOTE_PORT: ${{ secrets.REMOTE_PORT_MT }}
+        TARGET: ${{ secrets.TARGET_MT }}
+        ARGS: "-avzr"
+
+    - name: Run deployment script on server
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_MT }}
+      run: |
+        eval "$(ssh-agent -s)"
+        echo "$SSH_PRIVATE_KEY" | ssh-add -
+        ssh -o StrictHostKeyChecking=no -p ${{ secrets.REMOTE_PORT_MT }} ${{ secrets.REMOTE_USER_MT }}@${{ secrets.REMOTE_HOST_MT }} << 'EOF'
+          cd ${{ secrets.TARGET_MT }}
+          chmod -R 775 storage
+          chmod -R 775 bootstrap/cache
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan optimize
+          php artisan migrate --force
+          sudo systemctl restart nginx
+        EOF
